@@ -20,6 +20,8 @@ from better_profanity import profanity
 from vosper import main as vspr
 
 from collections import deque
+from textwrap import wrap
+
 
 client = udp_client.SimpleUDPClient(config.ip, config.sendport)
 
@@ -134,18 +136,22 @@ if __name__ == '__main__':
 
         print(data[-1])
         censoredResponse = censorMessage(data[-1])
-        ttsqueue.put(censoredResponse)
+        ttsqueue.put(censoredResponse[len(config.ai_name)+1:]) #ignore ai name and semicolon in tts reponse
         ttsFlag.put(1)
-        while ttsFlag.qsize>0:
+        while ttsFlag.qsize()>0:
             time.sleep(.05)
 
         #wait for playback to start before sending message data, but send rn
-        client.send_message("/chatbox/input", [censoredResponse, True])
-        #multiply time to display message by words spoken per minute if chars>144 limit for osc chatbox
-        time.sleep(len(censoredResponse))
+        ttsFlag2.put(1)#set this flag when tts starts speaking, will be removed by the tts process
+        msgarr = wrap(censoredResponse, 143)# splits and wraps text block into <144 sized character chunks in ordre to fit inside the osc chatbox
+        
+        for block in msgarr:
+            client.send_message("/chatbox/input", [block, True])
+            time.sleep(len(block.split())/config.tts_wpm/60) #words in block divided by spoken words per second
+
 
         #wait for tts to finish
-        while ttsFlag2.qsize>0:
+        while ttsFlag2.qsize()>0:
             time.sleep(.05)
         memory.append(data[-1])
         stopFlag.get()

@@ -8,7 +8,7 @@ import sounddevice as sd
 import time
 
 import config
-
+import os
 #replace with betterprofanity  https://pypi.org/project/better-profanity/
 
 
@@ -34,22 +34,23 @@ def generate_ttsmp3(text: str, ttsFlag, ttsFlag2):
     
     data = sound.get_array_of_samples()
 
-    sd.default.device = "CABLE Input (Elgato Sound Capture), Windows WASAPI"
+    sd.default.device = "Line 1 (Virtual Audio Cable), Windows WASAPI"
     ttsFlag.get()
     sd.play(data)
 
 
     sd.wait()
+    os.remove("tts.mp3")
+    ttsFlag2.get()
 
 
 
 def tts_run(queue, ttsFlag, ttsFlag2):
 
     print("\nTTS ready\n")
-
     while True:
         if queue.qsize() > 0:
-            generate_ttsmp3(queue.get(), ttsFlag)
+            generate_ttsmp3(queue.get(), ttsFlag, ttsFlag2)
         else:
             time.sleep(.1)
 
