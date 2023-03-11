@@ -45,9 +45,10 @@ def generate_ttsmp3(text: str, ttsFlag, ttsFlag2):
 
 
 
-def tts_run(queue, ttsFlag, ttsFlag2):
+def tts_run(queue, ttsFlag, ttsFlag2, ttsEvent):
 
     print("\nTTS ready\n")
+    ttsEvent.set()
     while True:
         if queue.qsize() > 0:
             generate_ttsmp3(queue.get(), ttsFlag, ttsFlag2)

@@ -49,22 +49,41 @@ def censorMessage(text:str)->str:
 if __name__ == '__main__':
 
 
-    
+    print("Setup...")
+    client.send_message("/chatbox/input", ["Setting up...", True])
+
+
     profanity.load_censor_words()
 
     listenqueue = multiprocessing.Queue()
     ttsqueue = multiprocessing.Queue()
-    ttsFlag = multiprocessing.Queue()
+    ttsFlag = multiprocessing.Queue() #could replace with events eventually
     ttsFlag2 = multiprocessing.Queue()
     stopFlag = multiprocessing.Queue()
 
-    listnprocess = multiprocessing.Process(target=vspr.vspr_run, args=(listenqueue,stopFlag))
-    ttsprocess = multiprocessing.Process(target=tts.tts_run, args=(ttsqueue,ttsFlag, ttsFlag2))
+
+    startupListeningEvent = multiprocessing.Event()
+    startupTtsEvent = multiprocessing.Event()
+    listenCD = multiprocessing.Event()
+    
+
+    listenCD.set()
+
+    listnprocess = multiprocessing.Process(target=vspr.vspr_run, args=(listenqueue,stopFlag, startupListeningEvent, listenCD))
+    ttsprocess = multiprocessing.Process(target=tts.tts_run, args=(ttsqueue,ttsFlag, ttsFlag2, startupTtsEvent))
+
     listnprocess.start()
     ttsprocess.start()
 
-    while True: 
+    
 
+
+    startupTtsEvent.wait()#wait for setup to begin
+    startupListeningEvent.wait()
+
+
+    while True: 
+        listenCD.wait()
         print("Listening...")
         client.send_message("/chatbox/input", ["Listening...", True])
         while listenqueue.qsize() == 0:
@@ -154,5 +173,10 @@ if __name__ == '__main__':
         while ttsFlag2.qsize()>0:
             time.sleep(.05)
         memory.append(data[-1])
+        
         stopFlag.get()
+
+        print("Wait...")
+        client.send_message("/chatbox/input", ["Wait...", True])
+
 
