@@ -3,3 +3,4 @@ config.py
 __pycache__/
 id.py
 speaker.wav
+*.mp3

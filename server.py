@@ -27,7 +27,8 @@ client = udp_client.SimpleUDPClient(config.ip, config.sendport)
 
 
 
-memory = deque([""]*config.memory*2, maxlen=config.memory*2) #FIFO queue to keep track of chat history
+memory = deque([], maxlen=int(config.memory*2+1)) #FIFO queue to keep track of chat history
+#need to rewrite this into seperate memory banks
 def censorMessage(text:str)->str:
 
     message = profanity.censor(text, '|')
@@ -83,6 +84,7 @@ if __name__ == '__main__':
 
 
     while True: 
+        print(memory)
         listenCD.wait()
         print("Listening...")
         client.send_message("/chatbox/input", ["Listening...", True])
@@ -92,69 +94,87 @@ if __name__ == '__main__':
         heardtext = listenqueue.get()
         censoredText = censorMessage(heardtext)
 
-        print(f"Heard: {heardtext} Thinking...")
+        if(censoredText.isspace()): continue
+
+        print(f"Heard: {censoredText} Thinking...")
         client.send_message("/chatbox/input", [f"Heard: {censoredText} Thinking...", True])
 
-        memory.append(f"You: {heardtext}")
+        
 
         history = ""
         for sentence in memory:
             if sentence != "":
                 history = history + f"\n{sentence}"
+        history += "\n"
+        inputtext = f"{config.context} {history} {config.chatter_name}: {heardtext}\n{config.ai_name}: "
+        print(inputtext)
+        params = {
+        'max_new_tokens': config.maxtok,
+        'do_sample': True,
+        'temperature': config.temperature,
+        'top_p': config.top_p,
+        'typical_p': config.typical_p,
+        'repetition_penalty': config.repetition_penalty,
+        'top_k': config.top_k,
+        'min_length': config.min_length,
+        'no_repeat_ngram_size': config.no_repeat_ngram,
+        'num_beams': config.num_beams,
+        'penalty_alpha': config.penalty_alpha,
+        'length_penalty': config.length_penalty,
+        'early_stopping': config.early_stopping,
+    }
 
-        inputtext = f"{config.context} \n {history} \n{config.ai_name}:"
-        
-        #print(inputtext)
-        response = requests.post("http://127.0.0.1:7860/run/textgen", json={
-    "data": [
-        inputtext,
-        config.maxtok,
-        True,
-        config.maxtok,
-        config.temperature,
-        config.top_p,
-        config.typical_p,
-        config.repetition_penalty,
-        config.top_k,
-        config.min_length,
-        config.no_repeat_ngram,
-        config.num_beams,
-        config.penalty_alpha,
-        config.length_penalty,
-        config.early_stopping,
-        config.chatter_name,
-        config.ai_name,
-        config.context,
-        config.memory,
-    ]}).json()
-        requests.post("http://127.0.0.1:7860/run/textgen", json={
-    "data": [
-        inputtext,
-        config.maxtok,
-        True,
-        config.maxtok,
-        config.temperature,
-        config.top_p,
-        config.typical_p,
-        config.repetition_penalty,
-        config.top_k,
-        config.min_length,
-        config.no_repeat_ngram,
-        config.num_beams,
-        config.penalty_alpha,
-        config.length_penalty,
-        config.early_stopping,
-        config.chatter_name,
-        config.ai_name,
-        config.context,
-        config.memory,
-    ]}).json()
-        
+
+        response = requests.post(f"http://{config.ip}:7860/run/textgen", json={
+            "data": [
+                inputtext,
+                params['max_new_tokens'],
+                params['do_sample'],
+                params['temperature'],
+                params['top_p'],
+                params['typical_p'],
+                params['repetition_penalty'],
+                params['top_k'],
+                params['min_length'],
+                params['no_repeat_ngram_size'],
+                params['num_beams'],
+                params['penalty_alpha'],
+                params['length_penalty'],
+                params['early_stopping'],
+            ]
+        }).json()
+        """
+        response2 = requests.post(f"http://{config.ip}:7860/run/textgen", json={
+            "data": [
+                inputtext,
+                params['max_new_tokens'],
+                params['do_sample'],
+                params['temperature'],
+                params['top_p'],
+                params['typical_p'],
+                params['repetition_penalty'],
+                params['top_k'],
+                params['min_length'],
+                params['no_repeat_ngram_size'],
+                params['num_beams'],
+                params['penalty_alpha'],
+                params['length_penalty'],
+                params['early_stopping'],
+            ]
+        }).json()
+        """
+
+
         data = response["data"][0]
+        #data2 = response2["data"][0]
+        print(data+"\n\n\n")
+        #print(data2)
+        #data = data2
         data = data.splitlines()
+        
 
-        print(data[-1])
         censoredResponse = censorMessage(data[-1])
+
         ttsqueue.put(censoredResponse[len(config.ai_name)+1:]) #ignore ai name and semicolon in tts reponse
         ttsFlag.put(1)
         while ttsFlag.qsize()>0:
@@ -166,17 +186,21 @@ if __name__ == '__main__':
         
         for block in msgarr:
             client.send_message("/chatbox/input", [block, True])
+            print(f"sleeptime: {len(block.split())/(config.tts_wpm/60)}, {len(block.split())}, {(config.tts_wpm/60)} ")
+
             time.sleep(len(block.split())/config.tts_wpm/60) #words in block divided by spoken words per second
+            time.sleep(.1)
 
 
         #wait for tts to finish
         while ttsFlag2.qsize()>0:
             time.sleep(.05)
+            
+        memory.append(f"{config.chatter_name}: {heardtext}")
         memory.append(data[-1])
         
         stopFlag.get()
 
         print("Wait...")
         client.send_message("/chatbox/input", ["Wait...", True])
-
 
