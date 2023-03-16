@@ -27,7 +27,7 @@ client = udp_client.SimpleUDPClient(config.ip, config.sendport)
 
 
 
-memory = deque([], maxlen=int(config.memory*2+1)) #FIFO queue to keep track of chat history
+memory = deque([], maxlen=int(config.memory*2)) #FIFO queue to keep track of chat history
 #need to rewrite this into seperate memory banks
 def censorMessage(text:str)->str:
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
             if sentence != "":
                 history = history + f"\n{sentence}"
         history += "\n"
-        inputtext = f"{config.context} {history} {config.chatter_name}: {heardtext}\n{config.ai_name}: "
+        inputtext = f"{config.context}{config.chatter_name}: {heardtext}\n{config.ai_name}: "
         print(inputtext)
         params = {
         'max_new_tokens': config.maxtok,
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         response = requests.post(f"http://{config.ip}:7860/run/textgen", json={
             "data": [
                 inputtext,
-                params['max_new_tokens'],
+                1,
                 params['do_sample'],
                 params['temperature'],
                 params['top_p'],
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                 params['early_stopping'],
             ]
         }).json()
-        """
+        
         response2 = requests.post(f"http://{config.ip}:7860/run/textgen", json={
             "data": [
                 inputtext,
@@ -162,14 +162,16 @@ if __name__ == '__main__':
                 params['early_stopping'],
             ]
         }).json()
-        """
+        
 
 
         data = response["data"][0]
-        #data2 = response2["data"][0]
+        data2 = response2["data"][0]
         print(data+"\n\n\n")
-        #print(data2)
-        #data = data2
+        print(data2)
+        data = data2
+
+
         data = data.splitlines()
         
 
@@ -188,7 +190,7 @@ if __name__ == '__main__':
             client.send_message("/chatbox/input", [block, True])
             print(f"sleeptime: {len(block.split())/(config.tts_wpm/60)}, {len(block.split())}, {(config.tts_wpm/60)} ")
 
-            time.sleep(len(block.split())/config.tts_wpm/60) #words in block divided by spoken words per second
+            time.sleep(len(block.split())/(config.tts_wpm/60)) #words in block divided by spoken words per second
             time.sleep(.1)
 
 
