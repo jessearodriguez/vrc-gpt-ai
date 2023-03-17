@@ -17,7 +17,7 @@ import numpy as np
 
 
 def generate_ttsmp3(text: str, ttsFlag, ttsFlag2):
-    print(f"tts: {text}")
+    #print(f"tts: {text}")
     engine = pyttsx3.init(driverName='sapi5')
     voices = engine.getProperty('voices')
     engine.setProperty('voice', voices[1].id)

@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
 
     while True: 
-        print(memory)
+        #print(memory)
         listenCD.wait()
         print("Listening...")
         client.send_message("/chatbox/input", ["Listening...", True])
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
         if(censoredText.isspace()): continue
 
-        print(f"Heard: {censoredText} Thinking...")
+        #print(f"Heard: {censoredText} Thinking...")
         client.send_message("/chatbox/input", [f"Heard: {censoredText} Thinking...", True])
 
         
@@ -105,8 +105,9 @@ if __name__ == '__main__':
         for sentence in memory:
             if sentence != "":
                 history = history + f"\n{sentence}"
-        history += "\n"
-        inputtext = f"{config.context}{config.chatter_name}: {heardtext}\n{config.ai_name}: "
+        #history += "\n"
+        #print(f"History: \n{history}")
+        inputtext = f"{config.context}{history}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
         print(inputtext)
         params = {
         'max_new_tokens': config.maxtok,
@@ -167,8 +168,8 @@ if __name__ == '__main__':
 
         data = response["data"][0]
         data2 = response2["data"][0]
-        print(data+"\n\n\n")
-        print(data2)
+        #print(data+"\n\n\n")
+        #print(data2)
         data = data2
 
 
