@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
         #print(f"Heard: {censoredText} Thinking...")
         client.send_message("/chatbox/input", [f"Heard: {censoredText} Thinking...", True])
-
+        #maybe threading loop to change the elipsese on 'thinking...' ?
         
 
         history = ""
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                 history = history + f"\n{sentence}"
         #history += "\n"
         #print(f"History: \n{history}")
-        inputtext = f"{config.context}{history}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
+        inputtext = f"{config.context}\n<START>\n{config.example_dialogue}{history}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
         print(inputtext)
         params = {
         'max_new_tokens': config.maxtok,
@@ -176,8 +176,12 @@ if __name__ == '__main__':
         data = data.splitlines()
         
 
-        censoredResponse = censorMessage(data[-1])
-
+        censoredResponse = censorMessage(html.escape(data[-1]))
+        if (censoredResponse[len(config.ai_name)+1:].isspace()):
+            stopFlag.get()
+            print("Wait...")
+            client.send_message("/chatbox/input", ["Wait...", True])
+            continue
         ttsqueue.put(censoredResponse[len(config.ai_name)+1:]) #ignore ai name and semicolon in tts reponse
         ttsFlag.put(1)
         while ttsFlag.qsize()>0:
