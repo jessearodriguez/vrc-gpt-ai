@@ -3,7 +3,7 @@ import json
 import re
 import html
 import os
-
+import unicodedata
 
 from pythonosc import udp_client
 
@@ -106,8 +106,8 @@ if __name__ == '__main__':
             if sentence != "":
                 history = history + f"\n{sentence}"
         #history += "\n"
-        #print(f"History: \n{history}")
-        inputtext = f"{config.context}\n<START>\n{config.example_dialogue}{history}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
+        #print(f"History: \n{history}"){history}
+        inputtext = f"{config.context}\n<START>\n{config.example_dialogue}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
         print(inputtext)
         params = {
         'max_new_tokens': config.maxtok,
@@ -125,6 +125,7 @@ if __name__ == '__main__':
         'early_stopping': config.early_stopping,
     }
 
+        #for some reason this api needs 2 post requests to return something usefull
 
         response = requests.post(f"http://{config.ip}:7860/run/textgen", json={
             "data": [
@@ -136,7 +137,7 @@ if __name__ == '__main__':
                 params['typical_p'],
                 params['repetition_penalty'],
                 params['top_k'],
-                params['min_length'],
+                0,
                 params['no_repeat_ngram_size'],
                 params['num_beams'],
                 params['penalty_alpha'],
@@ -175,8 +176,8 @@ if __name__ == '__main__':
 
         data = data.splitlines()
         
-
-        censoredResponse = censorMessage(html.escape(data[-1]))
+        
+        censoredResponse = html.unescape(censorMessage(unicodedata.normalize('NFKC',html.escape(data[-1]))))
         if (censoredResponse[len(config.ai_name)+1:].isspace()):
             stopFlag.get()
             print("Wait...")
@@ -193,7 +194,7 @@ if __name__ == '__main__':
         
         for block in msgarr:
             client.send_message("/chatbox/input", [block, True])
-            print(f"sleeptime: {len(block.split())/(config.tts_wpm/60)}, {len(block.split())}, {(config.tts_wpm/60)} ")
+            #print(f"sleeptime: {len(block.split())/(config.tts_wpm/60)}, {len(block.split())}, {(config.tts_wpm/60)} ")
 
             time.sleep(len(block.split())/(config.tts_wpm/60)) #words in block divided by spoken words per second
             time.sleep(.1)
