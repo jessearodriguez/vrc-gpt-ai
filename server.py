@@ -106,8 +106,13 @@ if __name__ == '__main__':
             if sentence != "":
                 history = history + f"\n{sentence}"
         #history += "\n"
-        #print(f"History: \n{history}"){history}
-        inputtext = f"{config.context}\n<START>\n{config.example_dialogue}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
+        #print(f"History: \n{history}")
+        inputtext = f"{config.context}\n<START>\n{config.example_dialogue}\n{history}{config.chatter_name}: {heardtext}\n{config.ai_name}: "
+
+        #This one does not include any previous history in its input. Sometimes including a bad question/answer pair from previous history
+        # results in the inference quality dropping severely.
+        
+        #inputtext = f"{config.context}\n<START>\n{config.example_dialogue}\n{config.chatter_name}: {heardtext}\n{config.ai_name}: "
         print(inputtext)
         params = {
         'max_new_tokens': config.maxtok,
