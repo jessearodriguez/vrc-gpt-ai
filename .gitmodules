@@ -1,0 +1,3 @@
+[submodule "vosper"]
+	path = vosper
+	url = https://github.com/jessearodriguez/vosper
